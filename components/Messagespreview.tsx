@@ -6,12 +6,12 @@ import Link from "next/link";
 // ─── Latest message — update this when a new message is published ─────────────
 const LATEST = {
   type: "video" as const,
-  youtubeId: "GlZEVgMFWJ8",
-  title: "The New Life In Christ (Part 2)",
+  youtubeId: "1gqZ5lL8GD8",
+  title: "The New Life In Christ (Part 3)",
   series: "Monday Bible Study",
   speaker: "Bro Goke Adesida",
-  date: "April 2025",
-  reference: "Understanding the nature and dynamics of the natural man.",
+  date: "8th June 2026",
+  reference: "Understanding the nature of the natural man.",
   telegramUrl: "https://t.me/calvaryway",
 };
 // ─────────────────────────────────────────────────────────────────────────────
