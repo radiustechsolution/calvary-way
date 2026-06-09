@@ -3,13 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURATION — update these two arrays with your actual image filenames
-// Images live in:
-//   /public/gallery/sowers/   → December Prayer Retreat photos
-//   /public/gallery/bible-study/ → bible study photos
-// ─────────────────────────────────────────────────────────────────────────────
-
 const PROGRAMMES = [
   {
     id: "sowers",
@@ -18,7 +11,6 @@ const PROGRAMMES = [
     subtitle: "The Covenant Keeping God",
     location: "Akure, Ondo State",
     folder: "/gallery/sowers",
-    // Replace with your actual filenames — first image is used as the card cover
     images: [
       "01.jpg",
       "02.jpg",
@@ -72,11 +64,9 @@ const PROGRAMMES = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 type Programme = (typeof PROGRAMMES)[number];
 
-// ── Lightbox ─────────────────────────────────────────────────────────────────
+// ── Lightbox — only mounted when a gallery is opened ─────────────────────────
 function Lightbox({
   programme,
   startIndex,
@@ -89,7 +79,8 @@ function Lightbox({
   const [index, setIndex] = useState(startIndex);
   const [loaded, setLoaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [stripReady, setStripReady] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
 
   const total = programme.images.length;
   const src = `${programme.folder}/${programme.images[index]}`;
@@ -103,7 +94,6 @@ function Lightbox({
     setIndex((i) => (i + 1) % total);
   }, [total]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") prev();
@@ -114,15 +104,27 @@ function Lightbox({
     return () => window.removeEventListener("keydown", handler);
   }, [prev, next, onClose]);
 
-  // Lock scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
+    // Defer filmstrip 400ms — let main image load first
+    const t = setTimeout(() => setStripReady(true), 400);
     return () => {
       document.body.style.overflow = "";
+      clearTimeout(t);
     };
   }, []);
 
-  // Download handler — fetches blob so browser prompts save dialog
+  // Auto-scroll active thumb into view
+  useEffect(() => {
+    if (!stripRef.current) return;
+    const active = stripRef.current.children[index] as HTMLElement;
+    active?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [index]);
+
   const handleDownload = async () => {
     setDownloading(true);
     try {
@@ -137,7 +139,6 @@ function Lightbox({
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open in new tab
       window.open(src, "_blank");
     } finally {
       setDownloading(false);
@@ -151,220 +152,120 @@ function Lightbox({
           position: fixed; inset: 0; z-index: 200;
           background: rgba(0,0,0,0.97);
           display: flex; flex-direction: column;
-          animation: lb-in 0.25s ease;
+          animation: lb-in 0.22s ease;
         }
-        @keyframes lb-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        /* Top bar */
+        @keyframes lb-in { from { opacity:0 } to { opacity:1 } }
         .lb-topbar {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-          flex-shrink: 0;
+          display:flex; align-items:center; justify-content:space-between;
+          padding:0.85rem 1.25rem;
+          border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;
         }
-
-        .lb-programme-name {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.72rem; font-weight: 500;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          color: rgba(255,255,255,0.5);
+        .lb-name { font-family:"DM Sans",sans-serif; font-size:0.7rem; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45); }
+        .lb-count { font-family:"DM Mono",monospace; font-size:0.65rem; letter-spacing:0.1em; color:rgba(255,255,255,0.28); }
+        .lb-actions { display:flex; align-items:center; gap:0.5rem; }
+        .lb-btn {
+          display:flex; align-items:center; justify-content:center;
+          width:2.1rem; height:2.1rem; border-radius:0.35rem;
+          background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+          color:rgba(255,255,255,0.5); cursor:pointer; transition:all 0.2s ease;
         }
-
-        .lb-counter {
-          font-family: 'DM Mono', 'Courier New', monospace;
-          font-size: 0.68rem; letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.3);
+        .lb-btn:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#fff; }
+        .lb-btn.dl {
+          background:rgba(201,169,110,0.1); border-color:rgba(201,169,110,0.22); color:#C9A96E;
+          padding:0 0.85rem; width:auto; font-family:"DM Sans",sans-serif;
+          font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; gap:0.35rem;
         }
-
-        .lb-topbar-actions {
-          display: flex; align-items: center; gap: 0.5rem;
-        }
-
-        .lb-icon-btn {
-          display: flex; align-items: center; justify-content: center;
-          width: 2.25rem; height: 2.25rem;
-          border-radius: 0.4rem;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.5);
-          cursor: pointer; transition: all 0.2s ease;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.65rem; letter-spacing: 0.1em;
-          text-transform: uppercase; gap: 0.35rem;
-        }
-        .lb-icon-btn:hover {
-          background: rgba(255,255,255,0.1);
-          border-color: rgba(255,255,255,0.2);
-          color: #fff;
-        }
-        .lb-icon-btn.download-btn {
-          background: rgba(201,169,110,0.1);
-          border-color: rgba(201,169,110,0.25);
-          color: #C9A96E;
-          padding: 0 0.85rem;
-          width: auto;
-        }
-        .lb-icon-btn.download-btn:hover {
-          background: rgba(201,169,110,0.2);
-          border-color: rgba(201,169,110,0.5);
-          color: #C9A96E;
-        }
-
-        /* Main image area */
+        .lb-btn.dl:hover { background:rgba(201,169,110,0.18); border-color:rgba(201,169,110,0.45); }
         .lb-stage {
-          flex: 1; min-height: 0;
-          display: flex; align-items: center; justify-content: center;
-          position: relative; overflow: hidden;
-          padding: 1rem;
+          flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+          position:relative; overflow:hidden; padding:1rem;
         }
-
-        .lb-img-wrap {
-          position: relative;
-          max-width: 100%; max-height: 100%;
-          display: flex; align-items: center; justify-content: center;
-        }
-
+        .lb-img-wrap { position:relative; max-width:100%; max-height:100%; display:flex; align-items:center; justify-content:center; }
         .lb-img {
-          max-width: 100%; max-height: calc(100svh - 140px);
-          object-fit: contain; display: block;
-          border-radius: 0.5rem;
-          opacity: 0; transition: opacity 0.3s ease;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+          max-width:100%; max-height:calc(100svh - 130px); object-fit:contain; display:block;
+          border-radius:0.5rem; opacity:0; transition:opacity 0.3s ease;
+          box-shadow:0 24px 80px rgba(0,0,0,0.6);
         }
-        .lb-img.ready { opacity: 1; }
-
-        .lb-spinner {
-          position: absolute; inset: 0;
-          display: flex; align-items: center; justify-content: center;
+        .lb-img.ready { opacity:1; }
+        .lb-spin-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+        .lb-ring {
+          width:26px; height:26px;
+          border:2px solid rgba(255,255,255,0.07); border-top-color:rgba(201,169,110,0.55);
+          border-radius:50%; animation:lb-spin 0.8s linear infinite;
         }
-        .lb-spinner-ring {
-          width: 28px; height: 28px;
-          border: 2px solid rgba(255,255,255,0.08);
-          border-top-color: rgba(201,169,110,0.6);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Nav arrows */
+        @keyframes lb-spin { to { transform:rotate(360deg) } }
         .lb-arrow {
-          position: absolute; top: 50%; transform: translateY(-50%);
-          width: 3rem; height: 3rem;
-          border-radius: 50%;
-          background: rgba(0,0,0,0.5);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: rgba(255,255,255,0.7);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: all 0.2s ease;
-          z-index: 10;
+          position:absolute; top:50%; transform:translateY(-50%);
+          width:2.75rem; height:2.75rem; border-radius:50%;
+          background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.1);
+          color:rgba(255,255,255,0.65);
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; transition:all 0.2s ease; z-index:10;
         }
-        .lb-arrow:hover {
-          background: rgba(0,0,0,0.8);
-          border-color: rgba(255,255,255,0.3);
-          color: #fff;
+        .lb-arrow:hover { background:rgba(0,0,0,0.75); border-color:rgba(255,255,255,0.28); color:#fff; }
+        .lb-arrow.prev { left:0.65rem; }
+        .lb-arrow.next { right:0.65rem; }
+        @media(max-width:500px){
+          .lb-arrow{width:2.25rem;height:2.25rem;}
+          .lb-arrow.prev{left:0.3rem;} .lb-arrow.next{right:0.3rem;}
         }
-        .lb-arrow.prev { left: 0.75rem; }
-        .lb-arrow.next { right: 0.75rem; }
-
-        @media (max-width: 500px) {
-          .lb-arrow { width: 2.5rem; height: 2.5rem; }
-          .lb-arrow.prev { left: 0.4rem; }
-          .lb-arrow.next { right: 0.4rem; }
-        }
-
-        /* Bottom filmstrip */
         .lb-strip {
-          flex-shrink: 0;
-          display: flex; align-items: center; gap: 0.4rem;
-          padding: 0.75rem 1.25rem;
-          overflow-x: auto;
-          border-top: 1px solid rgba(255,255,255,0.05);
-          scrollbar-width: none;
+          flex-shrink:0; display:flex; align-items:center; gap:0.35rem;
+          padding:0.65rem 1rem; overflow-x:auto;
+          border-top:1px solid rgba(255,255,255,0.05);
+          scrollbar-width:none; min-height:52px;
         }
-        .lb-strip::-webkit-scrollbar { display: none; }
-
+        .lb-strip::-webkit-scrollbar{display:none;}
         .lb-thumb {
-          width: 52px; height: 36px; flex-shrink: 0;
-          border-radius: 0.3rem;
-          overflow: hidden; cursor: pointer;
-          border: 2px solid transparent;
-          transition: border-color 0.2s ease, opacity 0.2s ease;
-          opacity: 0.45;
+          width:48px; height:34px; flex-shrink:0; border-radius:0.25rem;
+          overflow:hidden; cursor:pointer; border:2px solid transparent;
+          transition:border-color 0.2s ease,opacity 0.2s ease;
+          opacity:0.4; background:rgba(255,255,255,0.05);
         }
-        .lb-thumb.active {
-          border-color: #C9A96E;
-          opacity: 1;
-        }
-        .lb-thumb:hover { opacity: 0.85; }
-        .lb-thumb img {
-          width: 100%; height: 100%; object-fit: cover; display: block;
-        }
+        .lb-thumb.active{border-color:#C9A96E;opacity:1;}
+        .lb-thumb:hover{opacity:0.8;}
+        .lb-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
       `}</style>
 
       <div
         className="lb-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label={`${programme.name} gallery`}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        {/* Top bar */}
         <div className="lb-topbar">
-          <span className="lb-programme-name">
+          <span className="lb-name">
             {programme.name} · {programme.year}
           </span>
-          <span className="lb-counter">
+          <span className="lb-count">
             {index + 1} / {total}
           </span>
-          <div className="lb-topbar-actions">
+          <div className="lb-actions">
             <button
-              className="lb-icon-btn download-btn"
+              className="lb-btn dl"
               onClick={handleDownload}
               disabled={downloading}
-              aria-label="Download image"
             >
-              {downloading ? (
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 2v20M2 12l10 10 10-10" />
-                </svg>
-              ) : (
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              )}
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               {downloading ? "Saving…" : "Download"}
             </button>
-            <button
-              className="lb-icon-btn"
-              onClick={onClose}
-              aria-label="Close gallery"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <button className="lb-btn" onClick={onClose} aria-label="Close">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                 <path
                   d="M1 1l12 12M13 1L1 13"
                   stroke="currentColor"
@@ -376,35 +277,33 @@ function Lightbox({
           </div>
         </div>
 
-        {/* Image stage */}
         <div className="lb-stage">
           <div className="lb-img-wrap">
             {!loaded && (
-              <div className="lb-spinner">
-                <div className="lb-spinner-ring" />
+              <div className="lb-spin-wrap">
+                <div className="lb-ring" />
               </div>
             )}
+            {/* Only ONE image in DOM at a time — no array rendering */}
             <img
-              ref={imgRef}
               key={src}
               src={src}
               alt={`${programme.name} — photo ${index + 1}`}
               className={`lb-img${loaded ? " ready" : ""}`}
               onLoad={() => setLoaded(true)}
+              decoding="async"
             />
           </div>
-
-          {/* Arrows */}
           {total > 1 && (
             <>
               <button
                 className="lb-arrow prev"
                 onClick={prev}
-                aria-label="Previous photo"
+                aria-label="Previous"
               >
                 <svg
-                  width="16"
-                  height="16"
+                  width="15"
+                  height="15"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -418,11 +317,11 @@ function Lightbox({
               <button
                 className="lb-arrow next"
                 onClick={next}
-                aria-label="Next photo"
+                aria-label="Next"
               >
                 <svg
-                  width="16"
-                  height="16"
+                  width="15"
+                  height="15"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -437,23 +336,30 @@ function Lightbox({
           )}
         </div>
 
-        {/* Filmstrip */}
+        {/* Filmstrip — deferred 400ms + lazy loaded thumbs */}
         {total > 1 && (
-          <div className="lb-strip" role="list" aria-label="All photos">
-            {programme.images.map((img, i) => (
-              <div
-                key={img}
-                className={`lb-thumb${i === index ? " active" : ""}`}
-                role="listitem"
-                onClick={() => {
-                  setLoaded(false);
-                  setIndex(i);
-                }}
-                aria-label={`Photo ${i + 1}`}
-              >
-                <img src={`${programme.folder}/${img}`} alt="" loading="lazy" />
-              </div>
-            ))}
+          <div className="lb-strip" ref={stripRef}>
+            {stripReady
+              ? programme.images.map((img, i) => (
+                  <div
+                    key={img}
+                    className={`lb-thumb${i === index ? " active" : ""}`}
+                    onClick={() => {
+                      setLoaded(false);
+                      setIndex(i);
+                    }}
+                  >
+                    <img
+                      src={`${programme.folder}/${img}`}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                ))
+              : Array.from({ length: Math.min(total, 14) }).map((_, i) => (
+                  <div key={i} className="lb-thumb" />
+                ))}
           </div>
         )}
       </div>
@@ -470,7 +376,7 @@ function GalleryCard({
   onClick: () => void;
 }) {
   const cover = `${programme.folder}/${programme.images[0]}`;
-  const preview = programme.images.slice(1, 4);
+  const previews = programme.images.slice(1, 4);
 
   return (
     <button
@@ -478,12 +384,16 @@ function GalleryCard({
       onClick={onClick}
       aria-label={`Open ${programme.name} gallery`}
     >
-      {/* Cover image — fills most of card */}
       <div className="gc-cover-wrap">
-        <img src={cover} alt={programme.name} className="gc-cover-img" />
+        {/* loading="lazy" — only fetches when card enters viewport */}
+        <img
+          src={cover}
+          alt={programme.name}
+          className="gc-cover-img"
+          loading="lazy"
+          decoding="async"
+        />
         <div className="gc-cover-overlay" />
-
-        {/* Photo count badge */}
         <span className="gc-count-badge">
           <svg
             width="10"
@@ -501,13 +411,11 @@ function GalleryCard({
           </svg>
           {programme.images.length} photos
         </span>
-
-        {/* Hover: view gallery label */}
         <div className="gc-hover-cta">
           <span className="gc-hover-label">
             <svg
-              width="16"
-              height="16"
+              width="15"
+              height="15"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -522,14 +430,16 @@ function GalleryCard({
           </span>
         </div>
       </div>
-
-      {/* Bottom strip: preview thumbnails + info */}
       <div className="gc-footer">
-        {/* Small preview strip */}
         <div className="gc-preview-strip">
-          {preview.map((img, i) => (
+          {previews.map((img, i) => (
             <div key={i} className="gc-preview-thumb">
-              <img src={`${programme.folder}/${img}`} alt="" />
+              <img
+                src={`${programme.folder}/${img}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           ))}
           {programme.images.length > 4 && (
@@ -538,8 +448,6 @@ function GalleryCard({
             </div>
           )}
         </div>
-
-        {/* Text info */}
         <div className="gc-info">
           <div className="gc-info-top">
             <span className="gc-year">{programme.year}</span>
@@ -575,223 +483,46 @@ export default function GalleryPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap');
-
-        .gp-root {
-          font-family: 'DM Sans', sans-serif;
-          background: #0D0D0D;
-          min-height: 100svh;
-          padding-top: 80px;
-          color: #fff;
-        }
-
-        /* ── Page header ── */
-        .gp-header {
-          padding: 4rem 2rem 3.5rem;
-          max-width: 1100px;
-          margin: 0 auto;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .gp-back {
-          display: inline-flex; align-items: center; gap: 0.4rem;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-          color: rgba(255,255,255,0.28); text-decoration: none;
-          margin-bottom: 2.5rem;
-          transition: color 0.2s ease;
-        }
-        .gp-back:hover { color: rgba(255,255,255,0.6); }
-        .gp-back svg { transition: transform 0.2s ease; }
-        .gp-back:hover svg { transform: translateX(-3px); }
-
-        .gp-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase;
-          color: #C9A96E; margin-bottom: 0.85rem;
-        }
-
-        .gp-title {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(2.5rem, 7vw, 5rem);
-          font-weight: 700; line-height: 1.0;
-          letter-spacing: -0.02em; color: #fff;
-        }
-
-        .gp-title em {
-          font-style: italic; color: rgba(255,255,255,0.35);
-        }
-
-        .gp-desc {
-          margin-top: 1.25rem;
-          font-size: 0.9rem; color: rgba(255,255,255,0.35);
-          font-weight: 300; line-height: 1.7;
-          max-width: 44ch;
-        }
-
-        /* ── Cards grid ── */
-        .gp-grid {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 3rem 2rem 6rem;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
-        }
-
-        @media (max-width: 700px) {
-          .gp-grid { grid-template-columns: 1fr; }
-        }
-
-        /* ── Gallery card ── */
-        .gc-card {
-          background: none; border: none; padding: 0;
-          cursor: pointer; text-align: left;
-          border-radius: 1rem; overflow: hidden;
-          background: #161616;
-          border: 1px solid rgba(255,255,255,0.07);
-          display: flex; flex-direction: column;
-          transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1);
-        }
-        .gc-card:hover {
-          border-color: rgba(255,255,255,0.18);
-          transform: translateY(-4px);
-        }
-        .gc-card:focus-visible {
-          outline: 2px solid #C9A96E; outline-offset: 3px;
-        }
-
-        /* Cover */
-        .gc-cover-wrap {
-          position: relative;
-          aspect-ratio: 4/3;
-          overflow: hidden;
-          background: #111;
-        }
-
-        .gc-cover-img {
-          width: 100%; height: 100%;
-          object-fit: cover; display: block;
-          transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
-        }
-        .gc-card:hover .gc-cover-img { transform: scale(1.04); }
-
-        .gc-cover-overlay {
-          position: absolute; inset: 0;
-          background: linear-gradient(to bottom,
-            rgba(0,0,0,0.05) 0%,
-            rgba(0,0,0,0.45) 100%
-          );
-          transition: opacity 0.3s ease;
-        }
-        .gc-card:hover .gc-cover-overlay { opacity: 0.7; }
-
-        /* Count badge */
-        .gc-count-badge {
-          position: absolute; top: 0.85rem; left: 0.85rem;
-          display: inline-flex; align-items: center; gap: 0.35rem;
-          background: rgba(0,0,0,0.55);
-          backdrop-filter: blur(6px);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 2rem;
-          padding: 0.28rem 0.7rem;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
-          color: rgba(255,255,255,0.65);
-        }
-
-        /* Hover overlay CTA */
-        .gc-hover-cta {
-          position: absolute; inset: 0;
-          display: flex; align-items: center; justify-content: center;
-          opacity: 0; transition: opacity 0.3s ease;
-        }
-        .gc-card:hover .gc-hover-cta { opacity: 1; }
-
-        .gc-hover-label {
-          display: inline-flex; align-items: center; gap: 0.5rem;
-          background: rgba(201,169,110,0.9);
-          color: #0D0D0D;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.75rem; font-weight: 500;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 0.7rem 1.5rem;
-          border-radius: 2rem;
-          backdrop-filter: blur(4px);
-        }
-
-        /* Footer strip */
-        .gc-footer {
-          padding: 1.1rem 1.25rem 1.4rem;
-          display: flex; flex-direction: column; gap: 1rem;
-        }
-
-        /* Thumbnail preview row */
-        .gc-preview-strip {
-          display: flex; gap: 0.4rem; align-items: center;
-        }
-
-        .gc-preview-thumb {
-          width: 44px; height: 32px;
-          border-radius: 0.25rem; overflow: hidden;
-          flex-shrink: 0;
-          border: 1px solid rgba(255,255,255,0.07);
-        }
-        .gc-preview-thumb img {
-          width: 100%; height: 100%; object-fit: cover; display: block;
-        }
-
-        .gc-preview-more {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.62rem; letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.3);
-          padding-left: 0.3rem;
-        }
-
-        /* Text info */
-        .gc-info { display: flex; flex-direction: column; gap: 0.3rem; }
-
-        .gc-info-top {
-          display: flex; align-items: center; gap: 1rem;
-          margin-bottom: 0.1rem;
-        }
-
-        .gc-year {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
-          color: #C9A96E;
-        }
-
-        .gc-location {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.58rem; letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.25);
-          display: inline-flex; align-items: center; gap: 0.3rem;
-        }
-
-        .gc-name {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(1.25rem, 3vw, 1.6rem);
-          font-weight: 700; color: #fff; line-height: 1.15;
-        }
-
-        .gc-subtitle {
-          font-size: 0.78rem; color: rgba(255,255,255,0.35);
-          font-weight: 300; font-style: italic;
-        }
-
-        /* ── Download-all note ── */
-        .gp-note {
-          max-width: 1100px; margin: 0 auto;
-          padding: 0 2rem 4rem;
-          display: flex; align-items: center; gap: 0.6rem;
-          font-size: 0.72rem; color: rgba(255,255,255,0.22);
-          font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
-        }
-        .gp-note svg { flex-shrink: 0; opacity: 0.4; }
+        .gp-root { font-family:'DM Sans',sans-serif; background:#0D0D0D; min-height:100svh; padding-top:80px; color:#fff; }
+        .gp-header { padding:4rem 2rem 3.5rem; max-width:1100px; margin:0 auto; border-bottom:1px solid rgba(255,255,255,0.06); }
+        .gp-back { display:inline-flex; align-items:center; gap:0.4rem; font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.28); text-decoration:none; margin-bottom:2.5rem; transition:color 0.2s ease; }
+        .gp-back:hover { color:rgba(255,255,255,0.6); }
+        .gp-back svg { transition:transform 0.2s ease; }
+        .gp-back:hover svg { transform:translateX(-3px); }
+        .gp-eyebrow { font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.26em; text-transform:uppercase; color:#C9A96E; margin-bottom:0.85rem; }
+        .gp-title { font-family:'Playfair Display',serif; font-size:clamp(2.5rem,7vw,5rem); font-weight:700; line-height:1.0; letter-spacing:-0.02em; color:#fff; }
+        .gp-title em { font-style:italic; color:rgba(255,255,255,0.35); }
+        .gp-desc { margin-top:1.25rem; font-size:0.9rem; color:rgba(255,255,255,0.35); font-weight:300; line-height:1.7; max-width:44ch; }
+        .gp-grid { max-width:1100px; margin:0 auto; padding:3rem 2rem 6rem; display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+        @media(max-width:700px){.gp-grid{grid-template-columns:1fr;}}
+        .gc-card { background:#161616; border:1px solid rgba(255,255,255,0.07); padding:0; cursor:pointer; text-align:left; border-radius:1rem; overflow:hidden; display:flex; flex-direction:column; transition:border-color 0.3s ease,transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .gc-card:hover { border-color:rgba(255,255,255,0.18); transform:translateY(-4px); }
+        .gc-card:focus-visible { outline:2px solid #C9A96E; outline-offset:3px; }
+        .gc-cover-wrap { position:relative; aspect-ratio:4/3; overflow:hidden; background:#111; }
+        .gc-cover-img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.5s cubic-bezier(0.16,1,0.3,1); }
+        .gc-card:hover .gc-cover-img { transform:scale(1.04); }
+        .gc-cover-overlay { position:absolute; inset:0; background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.45) 100%); transition:opacity 0.3s ease; }
+        .gc-card:hover .gc-cover-overlay { opacity:0.7; }
+        .gc-count-badge { position:absolute; top:0.85rem; left:0.85rem; display:inline-flex; align-items:center; gap:0.35rem; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.1); border-radius:2rem; padding:0.28rem 0.7rem; font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.65); }
+        .gc-hover-cta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease; }
+        .gc-card:hover .gc-hover-cta { opacity:1; }
+        .gc-hover-label { display:inline-flex; align-items:center; gap:0.5rem; background:rgba(201,169,110,0.9); color:#0D0D0D; font-family:'DM Sans',sans-serif; font-size:0.75rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; padding:0.7rem 1.5rem; border-radius:2rem; }
+        .gc-footer { padding:1.1rem 1.25rem 1.4rem; display:flex; flex-direction:column; gap:1rem; }
+        .gc-preview-strip { display:flex; gap:0.4rem; align-items:center; }
+        .gc-preview-thumb { width:44px; height:32px; border-radius:0.25rem; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.04); }
+        .gc-preview-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .gc-preview-more { font-family:'DM Mono',monospace; font-size:0.62rem; letter-spacing:0.1em; color:rgba(255,255,255,0.3); padding-left:0.3rem; }
+        .gc-info { display:flex; flex-direction:column; gap:0.3rem; }
+        .gc-info-top { display:flex; align-items:center; gap:1rem; margin-bottom:0.1rem; }
+        .gc-year { font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.16em; text-transform:uppercase; color:#C9A96E; }
+        .gc-location { font-family:'DM Mono',monospace; font-size:0.58rem; letter-spacing:0.1em; color:rgba(255,255,255,0.25); display:inline-flex; align-items:center; gap:0.3rem; }
+        .gc-name { font-family:'Playfair Display',serif; font-size:clamp(1.25rem,3vw,1.6rem); font-weight:700; color:#fff; line-height:1.15; }
+        .gc-subtitle { font-size:0.78rem; color:rgba(255,255,255,0.35); font-weight:300; font-style:italic; }
+        .gp-note { max-width:1100px; margin:0 auto; padding:0 2rem 4rem; display:flex; align-items:center; gap:0.6rem; font-size:0.72rem; color:rgba(255,255,255,0.22); font-family:'DM Mono',monospace; letter-spacing:0.08em; }
+        .gp-note svg { flex-shrink:0; opacity:0.4; }
       `}</style>
 
       <div className="gp-root">
-        {/* Header */}
         <header className="gp-header">
           <Link href="/" className="gp-back">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -812,12 +543,11 @@ export default function GalleryPage() {
             <em>Gallery</em>
           </h1>
           <p className="gp-desc">
-            Moments from our programmes. Click a gallery to browse photos — each
-            image can be downloaded individually.
+            Moments from our programmes. Click a gallery to browse — each image
+            can be downloaded individually.
           </p>
         </header>
 
-        {/* Cards */}
         <div className="gp-grid">
           {PROGRAMMES.map((prog) => (
             <GalleryCard
@@ -828,7 +558,6 @@ export default function GalleryPage() {
           ))}
         </div>
 
-        {/* Hint */}
         <p className="gp-note">
           <svg
             width="13"
@@ -844,11 +573,11 @@ export default function GalleryPage() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          Use arrow keys to navigate photos · Click outside the image to close
+          Arrow keys to navigate · Click outside to close
         </p>
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox only mounts when open — zero weight when closed */}
       {open && (
         <Lightbox
           programme={open.programme}
