@@ -4,16 +4,20 @@ import { fal } from "@fal-ai/client";
 
 fal.config({ credentials: process.env.FAL_KEY });
 
-// Uploads any image (by URL or blob) to Cloudinary and returns a public URL
+// Uploads any image to Cloudinary and returns a public URL
 async function uploadUrlToCloudinary(imageUrl: string): Promise<string> {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-
   if (!cloudName || !uploadPreset) throw new Error("Cloudinary not configured");
 
-  // For server-side uploads Cloudinary accepts a URL directly — no blob conversion needed
+  // Fetch the image locally first (works for localhost), then upload as blob
+  const imageRes = await fetch(imageUrl);
+  if (!imageRes.ok)
+    throw new Error(`Failed to fetch vest image: ${imageRes.status}`);
+  const blob = await imageRes.blob();
+
   const form = new FormData();
-  form.append("file", imageUrl);
+  form.append("file", blob, "vest.png");
   form.append("upload_preset", uploadPreset);
   form.append("folder", "calvaryway/tryon");
 
@@ -50,15 +54,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build the absolute vest URL from the request origin
-    const origin =
-      req.headers.get("origin") ??
-      req.headers.get("referer")?.replace(/\/$/, "") ??
-      "";
-    const vestAbsoluteUrl = `${origin}${vestImagePath}`;
-
-    // Upload vest image to Cloudinary server-side (Node fetch handles FormData correctly)
-    const garmentUrl = await uploadUrlToCloudinary(vestAbsoluteUrl);
+    // Use the vest image already uploaded to Cloudinary
+    // To update: upload a new vest image to Cloudinary and paste the URL here
+    const garmentUrl = process.env.VEST_IMAGE_URL;
+    if (!garmentUrl) {
+      return NextResponse.json(
+        { error: "VEST_IMAGE_URL not configured in environment variables" },
+        { status: 500 },
+      );
+    }
 
     // Run the try-on model
     const result = await fal.subscribe("fal-ai/fashn/tryon/v1.5", {
