@@ -1,3 +1,4 @@
+import GalleryPage from "@/components/Gallerypage";
 import Hero from "@/components/hero";
 import MessagesPreview from "@/components/Messagespreview";
 import MinistrySelectorSection from "@/components/Ministryselectorsection";
@@ -12,6 +13,7 @@ export default function Home() {
       <MinistrySelectorSection />
       <MessagesPreview />
       <PastorSection />
+      <GalleryPage />
     </>
   );
 }

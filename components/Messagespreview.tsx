@@ -14,6 +14,7 @@ const LATEST = {
   reference: "Understanding the nature of the natural man.",
   telegramUrl: "https://t.me/calvaryway",
 };
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MessagesPreview() {

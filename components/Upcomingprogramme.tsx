@@ -9,13 +9,16 @@ const EVENT = {
   reference: "Judges 15:4",
   dates: "August 20 – 22, 2026",
   location: "Akure, Ondo State",
-  // Aug 20 2026, 8:00 AM WAT (UTC+1) = 07:00 UTC
   target: new Date("2026-08-20T07:00:00Z"),
   sessions: [
     { day: "Day 1", date: "Aug 20", title: "Fire Brands" },
     { day: "Day 2", date: "Aug 21", title: "Fire Brands" },
     { day: "Day 3", date: "Aug 22", title: "Fire Brands" },
   ],
+  // ── Path to the conference flyer / vest image in your public folder ─────────
+  // This image is used as the "garment" for the AI try-on
+  // Place your flyer/vest image at: public/sowers-vest.png  (or .jpg)
+  vestImagePath: "/sowers-vest.png",
 };
 
 type TimeLeft = {
@@ -24,6 +27,7 @@ type TimeLeft = {
   minutes: number;
   seconds: number;
 };
+type TryOnState = "idle" | "uploading" | "generating" | "done" | "error";
 
 function getTimeLeft(): TimeLeft {
   const diff = Math.max(0, EVENT.target.getTime() - Date.now());
@@ -39,12 +43,637 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
+// ── Converts a File to a base64 data URL ─────────────────────────────────────
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result as string);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Uploads image to Cloudinary (free tier) and returns a public URL ─────────
+// Cloudinary gives fal.ai a stable public URL it can actually fetch
+async function uploadToCloudinary(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/tryon/upload", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Upload failed");
+  return data.url as string;
+}
+
+// ── Try-On Panel ─────────────────────────────────────────────────────────────
+function TryOnPanel() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [state, setState] = useState<TryOnState>("idle");
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const reset = () => {
+    setState("idle");
+    setPreview(null);
+    setResult(null);
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFile = async (file: File) => {
+    // Validate
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file (JPG, PNG, WEBP).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image must be under 10 MB.");
+      return;
+    }
+
+    setError(null);
+    setState("uploading");
+
+    try {
+      // Show local preview immediately
+      const dataUrl = await fileToDataUrl(file);
+      setPreview(dataUrl);
+
+      setState("generating");
+
+      // Upload only the person photo — vest is handled server-side via its path
+      const personUrl = await uploadToCloudinary(file);
+
+      // Call our API route — pass vest path, server uploads it to Cloudinary directly
+      const res = await fetch("/api/tryon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personImageUrl: personUrl,
+          vestImagePath: EVENT.vestImagePath,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `Server error ${res.status}`);
+      }
+
+      setResult(data.imageUrl);
+      setState("done");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message ?? "Something went wrong. Please try again.");
+      setState("error");
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  // Download result
+  const handleDownload = async () => {
+    if (!result) return;
+    try {
+      const res = await fetch(result);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sowers-conference-2026.jpg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(result, "_blank");
+    }
+  };
+
+  return (
+    <>
+      <style>{`
+        /* ── Try-on panel ── */
+        .tryon-panel {
+          background: rgba(201,169,110,0.04);
+          border: 1px solid rgba(201,169,110,0.15);
+          border-radius: 1.25rem;
+          padding: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .tryon-header {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .tryon-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          background: rgba(201,169,110,0.1);
+          border: 1px solid rgba(201,169,110,0.2);
+          border-radius: 2rem;
+          padding: 0.28rem 0.8rem;
+          font-size: 0.6rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: #C9A96E;
+          font-weight: 500;
+          width: fit-content;
+        }
+
+        .tryon-title {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(1.2rem, 3vw, 1.55rem);
+          font-weight: 700;
+          color: #fff;
+          line-height: 1.2;
+        }
+
+        .tryon-subtitle {
+          font-size: 0.82rem;
+          color: rgba(255,255,255,0.4);
+          font-weight: 300;
+          line-height: 1.6;
+          max-width: 44ch;
+        }
+
+        /* ── Drop zone ── */
+        .tryon-dropzone {
+          border: 1.5px dashed rgba(201,169,110,0.25);
+          border-radius: 1rem;
+          padding: 2.5rem 1.5rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          cursor: pointer;
+          transition: border-color 0.25s ease, background 0.25s ease;
+          background: rgba(255,255,255,0.015);
+          text-align: center;
+        }
+
+        .tryon-dropzone:hover,
+        .tryon-dropzone.drag-over {
+          border-color: rgba(201,169,110,0.55);
+          background: rgba(201,169,110,0.06);
+        }
+
+        .tryon-dropzone-icon {
+          width: 3rem;
+          height: 3rem;
+          border-radius: 50%;
+          background: rgba(201,169,110,0.1);
+          border: 1px solid rgba(201,169,110,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #C9A96E;
+        }
+
+        .tryon-dropzone-main {
+          font-size: 0.88rem;
+          color: rgba(255,255,255,0.65);
+          font-weight: 400;
+        }
+
+        .tryon-dropzone-sub {
+          font-size: 0.72rem;
+          color: rgba(255,255,255,0.25);
+          font-weight: 300;
+        }
+
+        .tryon-browse-btn {
+          background: rgba(201,169,110,0.12);
+          border: 1px solid rgba(201,169,110,0.28);
+          color: #C9A96E;
+          padding: 0.55rem 1.25rem;
+          border-radius: 0.3rem;
+          font-size: 0.72rem;
+          font-weight: 500;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.22s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .tryon-browse-btn:hover {
+          background: rgba(201,169,110,0.2);
+          border-color: rgba(201,169,110,0.5);
+        }
+
+        /* ── Working states ── */
+        .tryon-working {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 2rem 0;
+        }
+
+        .tryon-working-imgs {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .tryon-working-img {
+          width: 72px;
+          height: 72px;
+          border-radius: 0.6rem;
+          object-fit: cover;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .tryon-arrow {
+          color: rgba(201,169,110,0.5);
+          animation: tryon-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes tryon-pulse {
+          0%, 100% { opacity: 0.3; transform: translateX(0); }
+          50% { opacity: 1; transform: translateX(4px); }
+        }
+
+        .tryon-spinner-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .tryon-spinner {
+          width: 36px;
+          height: 36px;
+          border: 2px solid rgba(201,169,110,0.12);
+          border-top-color: #C9A96E;
+          border-radius: 50%;
+          animation: tryon-spin 0.9s linear infinite;
+        }
+        @keyframes tryon-spin { to { transform: rotate(360deg); } }
+
+        .tryon-status {
+          font-size: 0.78rem;
+          color: rgba(255,255,255,0.4);
+          font-weight: 300;
+          letter-spacing: 0.06em;
+        }
+
+        .tryon-status strong {
+          color: rgba(201,169,110,0.8);
+          font-weight: 500;
+        }
+
+        /* ── Result ── */
+        .tryon-result {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .tryon-result-img-wrap {
+          position: relative;
+          border-radius: 0.75rem;
+          overflow: hidden;
+          border: 1px solid rgba(201,169,110,0.2);
+          background: #111;
+        }
+
+        .tryon-result-img {
+          width: 100%;
+          display: block;
+          max-height: 480px;
+          object-fit: contain;
+        }
+
+        .tryon-result-badge {
+          position: absolute;
+          top: 0.75rem;
+          left: 0.75rem;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(6px);
+          border: 1px solid rgba(201,169,110,0.3);
+          border-radius: 2rem;
+          padding: 0.28rem 0.75rem;
+          font-size: 0.6rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #C9A96E;
+        }
+
+        .tryon-result-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+        }
+
+        .tryon-dl-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: #C9A96E;
+          color: #0C0C0C;
+          font-size: 0.75rem;
+          font-weight: 500;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.3rem;
+          border: none;
+          cursor: pointer;
+          transition: background 0.22s ease, transform 0.2s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .tryon-dl-btn:hover { background: #dfc08a; transform: translateY(-1px); }
+
+        .tryon-retry-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          background: transparent;
+          color: rgba(255,255,255,0.4);
+          font-size: 0.72rem;
+          font-weight: 400;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          padding: 0.75rem 1.25rem;
+          border-radius: 0.3rem;
+          border: 1px solid rgba(255,255,255,0.09);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .tryon-retry-btn:hover {
+          border-color: rgba(255,255,255,0.22);
+          color: rgba(255,255,255,0.7);
+        }
+
+        /* ── Error ── */
+        .tryon-error {
+          background: rgba(220,60,60,0.07);
+          border: 1px solid rgba(220,60,60,0.2);
+          border-radius: 0.6rem;
+          padding: 0.9rem 1.1rem;
+          font-size: 0.8rem;
+          color: rgba(255,130,130,0.85);
+          display: flex;
+          align-items: flex-start;
+          gap: 0.6rem;
+        }
+
+        /* ── Tips ── */
+        .tryon-tips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .tryon-tip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.65rem;
+          color: rgba(255,255,255,0.25);
+          letter-spacing: 0.06em;
+        }
+
+        .tryon-tip-dot {
+          width: 3px; height: 3px;
+          border-radius: 50%;
+          background: rgba(201,169,110,0.3);
+          flex-shrink: 0;
+        }
+      `}</style>
+
+      <div className="tryon-panel">
+        {/* Header */}
+        <div className="tryon-header">
+          <span className="tryon-badge">
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+              <path d="M4 0a4 4 0 1 1 0 8A4 4 0 0 1 4 0zm0 1.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zM3.25 4v2.5h1.5V4h-1.5z" />
+            </svg>
+            AI Feature · Powered by fal.ai
+          </span>
+          <h3 className="tryon-title">Wear the Sowers Conference Vest</h3>
+          <p className="tryon-subtitle">
+            Upload a clear photo of yourself and our AI will dress you in the
+            official conference vest — ready to share and download.
+          </p>
+        </div>
+
+        {/* States */}
+        {(state === "idle" || state === "error") && (
+          <>
+            <div
+              className={`tryon-dropzone${dragOver ? " drag-over" : ""}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload your photo"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ")
+                  fileInputRef.current?.click();
+              }}
+            >
+              <div className="tryon-dropzone-icon">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </div>
+              <div>
+                <p className="tryon-dropzone-main">Drag your photo here, or</p>
+                <p className="tryon-dropzone-sub">
+                  JPG · PNG · WEBP · Max 10 MB
+                </p>
+              </div>
+              <button className="tryon-browse-btn" type="button">
+                Browse photo
+              </button>
+            </div>
+
+            {error && (
+              <div className="tryon-error">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ flexShrink: 0, marginTop: "1px" }}
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <div className="tryon-tips">
+              {[
+                "Face clearly visible",
+                "Good lighting",
+                "Front-facing pose",
+                "Plain background works best",
+              ].map((tip) => (
+                <span key={tip} className="tryon-tip">
+                  <span className="tryon-tip-dot" />
+                  {tip}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+
+        {(state === "uploading" || state === "generating") && (
+          <div className="tryon-working">
+            {preview && (
+              <div className="tryon-working-imgs">
+                <img
+                  src={preview}
+                  alt="Your photo"
+                  className="tryon-working-img"
+                />
+                <span className="tryon-arrow">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </span>
+                <img
+                  src={EVENT.vestImagePath}
+                  alt="Conference vest"
+                  className="tryon-working-img"
+                />
+              </div>
+            )}
+            <div className="tryon-spinner-wrap">
+              <div className="tryon-spinner" />
+              <p className="tryon-status">
+                {state === "uploading" ? (
+                  "Uploading your photo…"
+                ) : (
+                  <>
+                    <strong>AI is generating</strong> your look — this takes
+                    about 20–30 seconds
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {state === "done" && result && (
+          <div className="tryon-result">
+            <div className="tryon-result-img-wrap">
+              <img
+                src={result}
+                alt="Your Sowers Conference look"
+                className="tryon-result-img"
+              />
+              <span className="tryon-result-badge">✦ AI Generated</span>
+            </div>
+            <div className="tryon-result-actions">
+              <button className="tryon-dl-btn" onClick={handleDownload}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Download Image
+              </button>
+              <button className="tryon-retry-btn" onClick={reset}>
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
+                </svg>
+                Try another photo
+              </button>
+            </div>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          style={{ display: "none" }}
+          onChange={handleInputChange}
+        />
+      </div>
+    </>
+  );
+}
+
+// ── Main component (unchanged core, try-on added below) ──────────────────────
 export default function UpcomingProgramme() {
   const [time, setTime] = useState<TimeLeft | null>(null);
   const [tick, setTick] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Hydration-safe: only calculate on the client
   useEffect(() => {
     setTime(getTimeLeft());
     const id = setInterval(() => {
@@ -89,25 +718,18 @@ export default function UpcomingProgramme() {
 
         .prog-glow {
           position: absolute;
-          top: -120px;
-          right: -180px;
-          width: 600px;
-          height: 600px;
+          top: -120px; right: -180px;
+          width: 600px; height: 600px;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(201,169,110,0.07) 0%, transparent 70%);
           pointer-events: none;
         }
 
-        .v-rule {
-          width: 1px;
-          background: rgba(201,169,110,0.2);
-        }
+        .v-rule { width: 1px; background: rgba(201,169,110,0.2); }
 
         .reveal {
-          opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1),
-                      transform 0.7s cubic-bezier(0.16,1,0.3,1);
+          opacity: 0; transform: translateY(24px);
+          transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
         }
         .reveal.d1 { transition-delay: 0.05s; }
         .reveal.d2 { transition-delay: 0.18s; }
@@ -116,101 +738,66 @@ export default function UpcomingProgramme() {
         .reveal.d5 { transition-delay: 0.54s; }
         .reveal.animate-in { opacity: 1; transform: translateY(0); }
 
-        .digit-block {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.35rem;
-        }
+        .digit-block { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
 
         .digit-value {
           font-family: 'Playfair Display', serif;
           font-size: clamp(2.6rem, 5vw, 4rem);
-          font-weight: 700;
-          color: #fff;
-          line-height: 1;
-          letter-spacing: -0.02em;
-          min-width: 2ch;
-          text-align: center;
+          font-weight: 700; color: #fff; line-height: 1;
+          letter-spacing: -0.02em; min-width: 2ch; text-align: center;
           transition: color 0.15s ease;
         }
-
-        /* Seconds digit pulses gold each tick so you can see it's live */
-        .digit-value.tick {
-          color: #C9A96E;
-        }
+        .digit-value.tick { color: #C9A96E; }
 
         .digit-label {
-          font-size: 0.62rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.35);
-          font-weight: 500;
+          font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
+          color: rgba(255,255,255,0.35); font-weight: 500;
         }
 
         .digit-sep {
           font-family: 'Playfair Display', serif;
-          font-size: 2.5rem;
-          color: rgba(201,169,110,0.3);
-          line-height: 1;
-          padding-bottom: 1.4rem;
-          align-self: flex-end;
+          font-size: 2.5rem; color: rgba(201,169,110,0.3); line-height: 1;
+          padding-bottom: 1.4rem; align-self: flex-end;
         }
 
         .session-card {
           border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 0.75rem;
-          background: rgba(255,255,255,0.025);
+          border-radius: 0.75rem; background: rgba(255,255,255,0.025);
           transition: border-color 0.25s ease, background 0.25s ease;
         }
-
         .session-card:hover {
-          border-color: rgba(201,169,110,0.25);
-          background: rgba(201,169,110,0.04);
+          border-color: rgba(201,169,110,0.25); background: rgba(201,169,110,0.04);
         }
 
         .session-day-badge {
-          font-size: 0.62rem;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: #C9A96E;
-          font-weight: 500;
+          font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+          color: #C9A96E; font-weight: 500;
         }
 
         .reg-btn {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.78rem;
-          font-weight: 500;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: #0C0C0C;
-          background: #C9A96E;
-          padding: 0.85rem 2rem;
-          border-radius: 0.25rem;
-          text-decoration: none;
-          display: inline-block;
+          font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+          letter-spacing: 0.14em; text-transform: uppercase; color: #0C0C0C;
+          background: #C9A96E; padding: 0.85rem 2rem; border-radius: 0.25rem;
+          text-decoration: none; display: inline-block;
           transition: background 0.25s ease, transform 0.2s ease;
         }
-        .reg-btn:hover {
-          background: #dfc08a;
-          transform: translateY(-2px);
-        }
+        .reg-btn:hover { background: #dfc08a; transform: translateY(-2px); }
 
         .cal-link {
-          font-size: 0.75rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.4);
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
+          font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+          color: rgba(255,255,255,0.4); text-decoration: none;
+          display: inline-flex; align-items: center; gap: 0.4rem;
           transition: color 0.2s ease;
         }
         .cal-link:hover { color: rgba(255,255,255,0.8); }
 
         .gold-line { width: 2.5rem; height: 1.5px; background: #C9A96E; display: block; }
         .h-rule { height: 1px; background: rgba(255,255,255,0.06); }
+
+        .prog-section-divider {
+          height: 1px;
+          background: linear-gradient(to right, transparent, rgba(201,169,110,0.2), transparent);
+        }
       `}</style>
 
       <section
@@ -263,7 +850,6 @@ export default function UpcomingProgramme() {
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-0">
             {/* Left: Countdown + CTA */}
             <div className="lg:w-[55%] flex flex-col gap-10 lg:pr-14">
-              {/* Scripture */}
               <div className="reveal d2 flex flex-col gap-2">
                 <p
                   style={{
@@ -289,7 +875,6 @@ export default function UpcomingProgramme() {
                 </span>
               </div>
 
-              {/* Countdown */}
               <div className="reveal d3 flex flex-col gap-4">
                 <p
                   style={{
@@ -329,7 +914,6 @@ export default function UpcomingProgramme() {
 
               <div className="h-rule reveal d3" />
 
-              {/* CTA row */}
               <div className="reveal d4 flex flex-wrap items-center gap-5">
                 <Link href="/register" className="reg-btn">
                   Register Free
@@ -423,7 +1007,6 @@ export default function UpcomingProgramme() {
                 </div>
               </div>
 
-              {/* Location */}
               <div className="reveal d5 mt-2 flex items-center gap-2.5">
                 <svg width="13" height="16" viewBox="0 0 13 16" fill="none">
                   <path
@@ -443,6 +1026,14 @@ export default function UpcomingProgramme() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* ── Divider ── */}
+          <div className="prog-section-divider reveal d4" />
+
+          {/* ── Try-On panel ── */}
+          <div className="reveal d5">
+            <TryOnPanel />
           </div>
         </div>
       </section>
