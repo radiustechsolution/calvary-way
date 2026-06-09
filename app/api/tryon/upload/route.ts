@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate
+    // Client always sends PNG (converted via canvas) — still validate just in case
     const allowed = ["image/jpeg", "image/png", "image/webp"];
     if (!allowed.includes(file.type)) {
       return NextResponse.json(
@@ -53,12 +53,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Forward to Cloudinary — force PNG output so fal.ai can always identify the format
+    // File arrives as PNG (converted client-side) — upload directly
     const cloudinaryForm = new FormData();
     cloudinaryForm.append("file", file);
     cloudinaryForm.append("upload_preset", uploadPreset);
     cloudinaryForm.append("folder", "calvaryway/tryon");
-    cloudinaryForm.append("format", "png"); // ← converts any JPEG/WEBP to PNG
 
     const cloudinaryRes = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,

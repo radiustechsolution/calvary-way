@@ -1,5 +1,4 @@
 "use client";
-// s
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -54,18 +53,82 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-// ── Uploads image to Cloudinary (free tier) and returns a public URL ─────────
-// Cloudinary gives fal.ai a stable public URL it can actually fetch
+// ── Converts any image to a compressed JPEG under 8MB ────────────────────────
+// Resizes to max 1920px and uses JPEG compression — well within Cloudinary free limits
+function convertToPng(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read image file"));
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        // Resize to max 1920px on longest side — plenty for try-on quality
+        const MAX = 1920;
+        let { naturalWidth: w, naturalHeight: h } = img;
+        if (w > MAX || h > MAX) {
+          if (w > h) {
+            h = Math.round((h * MAX) / w);
+            w = MAX;
+          } else {
+            w = Math.round((w * MAX) / h);
+            h = MAX;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas not supported"));
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Use JPEG at 0.88 quality — typically 0.5–3MB for a portrait photo
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("Canvas conversion failed"));
+            resolve(new File([blob], "photo.jpg", { type: "image/jpeg" }));
+          },
+          "image/jpeg",
+          0.88,
+        );
+      };
+      img.onerror = () =>
+        reject(
+          new Error(
+            "Could not decode image. If using an iPhone photo (HEIC), please convert to JPG first or use Safari.",
+          ),
+        );
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Uploads PNG directly from browser to Cloudinary ─────────────────────────
+// Bypasses the server entirely — avoids DNS/network issues on localhost
+// NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is safe to expose (read-only public config)
 async function uploadToCloudinary(file: File): Promise<string> {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) throw new Error("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not set");
+
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  if (!uploadPreset)
+    throw new Error("NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET not set");
+
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch("/api/tryon/upload", {
-    method: "POST",
-    body: formData,
-  });
+  formData.append("upload_preset", uploadPreset);
+  formData.append("folder", "calvaryway/tryon");
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: "POST", body: formData },
+  );
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? "Upload failed");
-  return data.url as string;
+  if (!res.ok)
+    throw new Error(data?.error?.message ?? "Cloudinary upload failed");
+  return data.secure_url as string;
 }
 
 // ── Try-On Panel ─────────────────────────────────────────────────────────────
@@ -87,8 +150,13 @@ function TryOnPanel() {
 
   const handleFile = async (file: File) => {
     // Validate
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file (JPG, PNG, WEBP).");
+    // Accept all image types including HEIF/HEIC from iPhone
+    const isImage =
+      file.type.startsWith("image/") ||
+      file.name.toLowerCase().endsWith(".heic") ||
+      file.name.toLowerCase().endsWith(".heif");
+    if (!isImage) {
+      setError("Please upload an image file (JPG, PNG, WEBP, HEIF).");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -97,17 +165,23 @@ function TryOnPanel() {
     }
 
     setError(null);
-    setState("uploading");
 
     try {
-      // Show local preview immediately
-      const dataUrl = await fileToDataUrl(file);
+      // Convert to PNG first (handles JPEG, HEIF, WEBP uniformly)
+      const pngFile = await convertToPng(file);
+
+      // Set preview and uploading state together before any async work
+      const dataUrl = await fileToDataUrl(pngFile);
       setPreview(dataUrl);
+      setState("uploading");
+
+      // Small delay so React renders the preview before we start the upload
+      await new Promise((r) => setTimeout(r, 50));
 
       setState("generating");
 
-      // Upload only the person photo — vest is handled server-side via its path
-      const personUrl = await uploadToCloudinary(file);
+      // Upload the PNG — vest is handled server-side via its path
+      const personUrl = await uploadToCloudinary(pngFile);
 
       // Call our API route — pass vest path, server uploads it to Cloudinary directly
       const res = await fetch("/api/tryon", {
@@ -552,7 +626,7 @@ function TryOnPanel() {
                 "Face clearly visible",
                 "Good lighting",
                 "Front-facing pose",
-                "Plain background works best",
+                "iPhone users: use Safari or convert to JPG",
               ].map((tip) => (
                 <span key={tip} className="tryon-tip">
                   <span className="tryon-tip-dot" />
@@ -660,7 +734,7 @@ function TryOnPanel() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp"
           style={{ display: "none" }}
           onChange={handleInputChange}
         />

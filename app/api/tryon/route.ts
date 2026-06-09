@@ -87,8 +87,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    console.log("[tryon] raw result:", JSON.stringify(result, null, 2));
     const outputUrl =
-      (result as any)?.images?.[0]?.url ?? (result as any)?.image?.url;
+      (result as any)?.data?.images?.[0]?.url ??
+      (result as any)?.images?.[0]?.url;
 
     if (!outputUrl) {
       return NextResponse.json(
