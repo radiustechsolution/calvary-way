@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Generate a vest with the conference design printed on it
+    // Generate a shirt with the conference design printed on it
     const result = (await fal.subscribe("fal-ai/flux-pro/v1.1", {
       input: {
-        prompt: `Product photography of a sleeveless vest / waistcoat laid flat on a pure white background. The vest is white/cream coloured cotton fabric. On the front chest area, there is bold printed text that reads "SOWERS CONFERENCE 2026" at the top, and below it "FIRE BRANDS" in large decorative letters, and at the bottom "Judges 15:4" and "Akure, Nigeria · Aug 20-22". The text is printed in dark navy/black ink directly on the vest fabric. Clean studio lighting, flat-lay product photo style, no shadows, white background only.`,
+        prompt: `Product photography of a black short-sleeve round neck t-shirt / crew neck tee laid flat on a pure white background. The shirt is solid black cotton. On the front chest area is a bold graphic print that fills most of the chest: fiery orange and red textured background like burning embers, large 3D gold and white bold text reading "FIRE BRANDS" with flame motifs inside the letters, above it smaller text "theme:" in cursive script on a red ribbon banner, below it a red banner with white text "A PEOPLE PREPARED BY THE LORD", at the top left corner "CALVARY WAY MISSIONS" with a small cross logo, at the top right "SOWER'S CONFERENCE 2026" in white text. The overall print looks like a fire-themed event poster printed directly on the black shirt fabric. Clean studio lighting, flat-lay product photo, white background only, no shadows.`,
         image_size: "portrait_4_3",
         num_images: 1,
         safety_tolerance: "5",
