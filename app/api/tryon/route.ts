@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("[tryon] person URL:", personImageUrl);
+    console.log("[tryon] garment URL:", garmentUrl);
+
     // Run the try-on model
     const result = await fal.subscribe("fal-ai/fashn/tryon/v1.5", {
       input: {
@@ -73,7 +76,15 @@ export async function POST(req: NextRequest) {
         mode: "balanced",
         garment_photo_type: "auto",
       },
-      logs: false,
+      logs: true,
+      onQueueUpdate: (update) => {
+        console.log("[tryon] status:", update.status);
+        if ("logs" in update && update.logs) {
+          update.logs.forEach((l: any) =>
+            console.log("[tryon log]", l.message),
+          );
+        }
+      },
     });
 
     const outputUrl =
@@ -88,11 +99,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ imageUrl: outputUrl });
   } catch (err: any) {
-    console.error("[tryon] Error:", err);
-    return NextResponse.json(
-      { error: err?.message ?? "Generation failed" },
-      { status: 500 },
+    const detail = JSON.stringify(
+      err?.body?.detail ?? err?.body ?? err?.message ?? err,
+      null,
+      2,
     );
+    console.error("[tryon] Full error detail:", detail);
+    return NextResponse.json({ error: detail }, { status: 500 });
   }
 }
 
