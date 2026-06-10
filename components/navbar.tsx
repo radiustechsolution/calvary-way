@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
+  { label: "About", href: "/contact" },
   { label: "Sermons", href: "/sermons" },
   { label: "Mission", href: "/mission" },
   { label: "Contact", href: "/contact" },
@@ -223,7 +223,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <Link href="/about" className="nav-cta hidden md:inline-block">
+          <Link href="/contact" className="nav-cta hidden md:inline-block">
             Join Us
           </Link>
 
@@ -256,7 +256,7 @@ export default function Navbar() {
           ))}
         </nav>
         <Link
-          href="/about"
+          href="/contact"
           className="nav-cta mt-10 self-start"
           onClick={() => setMenuOpen(false)}
         >
