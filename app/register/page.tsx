@@ -346,11 +346,9 @@ export default function RegisterPage() {
               </svg>
               Back home
             </Link>
-
             <p className="rg-eyebrow">Free Registration</p>
             <h1 className="rg-event-title">{EVENT.name}</h1>
             <p className="rg-event-theme">{EVENT.theme}</p>
-
             <div className="rg-event-details">
               <div className="rg-detail">
                 <div className="rg-detail-icon">
@@ -409,7 +407,6 @@ export default function RegisterPage() {
                 3 days
               </div>
             </div>
-
             <div className="rg-scripture">
               <p className="rg-verse">
                 "Then Samson went and caught three hundred foxes and took
@@ -420,7 +417,7 @@ export default function RegisterPage() {
                 {EVENT.ref} — {EVENT.tagline}
               </span>
             </div>
-
+            {/* p */}
             <span className="rg-free-badge">
               <svg
                 width="10"
