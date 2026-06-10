@@ -406,7 +406,7 @@ export default function RegisterPage() {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
-                3 days · Sessions morning & evening
+                3 days
               </div>
             </div>
 
