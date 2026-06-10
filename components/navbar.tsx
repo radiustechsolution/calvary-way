@@ -223,7 +223,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <Link href="/join" className="nav-cta hidden md:inline-block">
+          <Link href="/about" className="nav-cta hidden md:inline-block">
             Join Us
           </Link>
 

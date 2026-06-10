@@ -114,6 +114,8 @@ export default function PastorSection() {
                   src="/goke.jpeg"
                   className="w-full aspect-[4/5] object-cover object-top"
                   alt="Bro Goke Adesida"
+                  loading="lazy"
+                  decoding="async"
                 />
                 {/* Name badge pinned to bottom of image */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 px-5 py-5">

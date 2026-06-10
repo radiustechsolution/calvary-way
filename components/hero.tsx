@@ -233,10 +233,10 @@ export default function Hero() {
 
             {/* CTAs */}
             <div className="fade-up-4 flex flex-wrap items-center gap-5 mt-2">
-              <Link href="/join" className="hero-cta-primary">
+              <Link href="/register" className="hero-cta-primary">
                 Sowers Conference
               </Link>
-              <Link href="/about" className="hero-cta-secondary">
+              <Link href="/contact" className="hero-cta-secondary">
                 Contact Us
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path
