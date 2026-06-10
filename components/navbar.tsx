@@ -256,7 +256,7 @@ export default function Navbar() {
           ))}
         </nav>
         <Link
-          href="/join"
+          href="/about"
           className="nav-cta mt-10 self-start"
           onClick={() => setMenuOpen(false)}
         >
