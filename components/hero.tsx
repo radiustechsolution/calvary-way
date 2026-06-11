@@ -91,7 +91,7 @@ export default function Hero() {
 
         .hero-heading {
           font-family: 'Playfair Display', serif;
-          font-size: clamp(2.8rem, 7vw, 5.5rem);
+          font-size: clamp(2.8rem, 7vw, 4rem);
           line-height: 1.08;
           font-weight: 700;
           color: #fff;
@@ -209,7 +209,7 @@ export default function Hero() {
 
         {/* Main content — pinned to bottom */}
         <div className="hero-content max-w-6xl mx-auto w-full px-5 pb-16 md:pb-20">
-          <div className="max-w-2xl flex flex-col  pt-20 ">
+          <div className="max-w-2xl flex flex-col pt-20 gap-3 ">
             {/* Eyebrow */}
             <div className="fade-up-1 flex items-center gap-3">
               <span className="gold-line" />
