@@ -209,7 +209,7 @@ export default function Hero() {
 
         {/* Main content — pinned to bottom */}
         <div className="hero-content max-w-6xl mx-auto w-full px-5 pb-16 md:pb-20">
-          <div className="max-w-2xl flex flex-col  pt-20 gap-5">
+          <div className="max-w-2xl flex flex-col  pt-20 ">
             {/* Eyebrow */}
             <div className="fade-up-1 flex items-center gap-3">
               <span className="gold-line" />
