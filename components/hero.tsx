@@ -36,7 +36,7 @@ export default function Hero() {
         .hero-bg {
           position: absolute;
           inset: -10% 0 -10% 0;
-          background-image: url('/hero.jpg');
+          background-image: url('/hero1.jpg');
           background-size: cover;
           background-position: center top;
           will-change: transform;
@@ -47,10 +47,10 @@ export default function Hero() {
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(12,12,12,0.3) 0%,
-            rgba(12,12,12,0.15) 30%,
-            rgba(12,12,12,0.55) 65%,
-            rgba(12,12,12,0.97) 100%
+            rgba(12,12,12,0.55) 0%,
+            rgba(12,12,12,0.35) 30%,
+            rgba(12,12,12,0.80) 65%,
+            rgba(12,12,12,1) 100%
           );
         }
 
@@ -212,10 +212,12 @@ export default function Hero() {
           <div className="max-w-2xl flex flex-col pt-20 gap-3 ">
             {/* Eyebrow */}
             <div className="fade-up-1 flex items-center gap-3">
+              {/* <div className="flex items-center gap-3 bg-[#30004A]/20 px-3 py-1 rounded"> */}
               <span className="gold-line" />
               <span className="hero-eyebrow">
                 Calvary way Mission · Akure, Nigeria
               </span>
+              {/* </div> */}
             </div>
 
             {/* Heading */}
