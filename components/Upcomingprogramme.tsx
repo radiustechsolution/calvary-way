@@ -7,14 +7,15 @@ const EVENT = {
   name: "Sowers Conference",
   tagline: "Fire Brands - A people prepared by the Lord.",
   reference: "Judges 15:4",
-  dates: "August 20 – 22, 2026",
+  dates: "August 19 – 22, 2026",
   location:
     "Christ The Redeemer's International Secondary School, Akure (CRISSA)",
   target: new Date("2026-08-20T07:00:00Z"),
   sessions: [
-    { day: "Day 1", date: "Aug 20", title: "Camp Opens" },
-    { day: "Day 2", date: "Aug 21", title: "Word, Spirit and Power" },
-    { day: "Day 3", date: "Aug 22", title: "Grand Finale" },
+    { day: "Day 1", date: "Aug 19", title: "Camp Opens" },
+    { day: "Day 2", date: "Aug 20", title: "Word, Spirit and Power" },
+    { day: "Day 3", date: "Aug 21", title: "Faith and Action" },
+    { day: "Day 4", date: "Aug 22", title: "Grand Finale" },
   ],
   // ── Path to the conference flyer / vest image in your public folder ─────────
   // This image is used as the "garment" for the AI try-on
