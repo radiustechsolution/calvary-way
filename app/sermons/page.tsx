@@ -9,6 +9,13 @@ import Link from "next/link";
 
 const AUDIO_MESSAGES = [
   {
+    id: 1001,
+    title: "The New Life in Christ (5)",
+    series: "Monday Bible Study",
+    date: "Jun 22, 2026",
+    telegramUrl: "https://t.me/calvaryway/3717",
+  },
+  {
     id: 1,
     title: "The New Life in Christ (4)",
     series: "Monday Bible Study",
@@ -88,6 +95,13 @@ const AUDIO_MESSAGES = [
 ];
 
 const VIDEO_MESSAGES = [
+  {
+    id: 1001,
+    youtubeId: "ijhrPlnrNjY",
+    title: "The New Life in Christ (5)",
+    series: "Monday Bible Study",
+    date: "Jun 22, 2026",
+  },
   {
     id: 1,
     youtubeId: "jPWYq5VzIC8",
