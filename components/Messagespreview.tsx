@@ -6,18 +6,18 @@ import Link from "next/link";
 // ─── Latest message — update this when a new message is published ─────────────
 const LATEST = {
   type: "video" as const,
-  youtubeId: "jPWYq5VzIC8",
-  title: "The New Life In Christ (Part 4)",
+  youtubeId: "ijhrPlnrNjY",
+  title: "The New Life In Christ (Part 5)",
   series: "Monday Bible Study",
   speaker: "Bro Goke Adesida",
-  date: "15th June 2026",
+  date: "22nd June 2026",
   reference: "The Functionality of Gods Life in our heart.",
   telegramUrl: "https://t.me/calvaryway",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function MessagesPreview() {
+https: export default function MessagesPreview() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
 
