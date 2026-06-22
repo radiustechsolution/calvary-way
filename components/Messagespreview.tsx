@@ -17,7 +17,7 @@ const LATEST = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-https: export default function MessagesPreview() {
+export default function MessagesPreview() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
 
