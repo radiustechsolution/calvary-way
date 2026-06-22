@@ -385,7 +385,7 @@ export default function MessagesPreview() {
                   </svg>
                   Audio on Telegram
                 </a>
-                <Link href="/messages" className="mp-action-btn ghost">
+                <Link href="/sermons" className="mp-action-btn ghost">
                   All messages →
                 </Link>
               </div>
