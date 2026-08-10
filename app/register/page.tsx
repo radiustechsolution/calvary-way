@@ -7,7 +7,7 @@ const EVENT = {
   name: "Sowers Conference 2026",
   theme: "Fire Brands",
   ref: "Judges 15:4",
-  dates: "August 20 – 22, 2026",
+  dates: "August 19 – 22, 2026",
   location:
     "Christ The Redeemer's International Secondary School, Akure (CRISSA)",
   tagline: "A people prepared by the Lord.",
@@ -107,7 +107,7 @@ export default function RegisterPage() {
 
         .rg-root {
           font-family: 'DM Sans', sans-serif;
-          background: #0C0C0C; color: #fff;
+          background: #FFFFFF; color: #0C0C0C;
           min-height: 100svh; padding-top: 80px;
         }
 
@@ -128,30 +128,30 @@ export default function RegisterPage() {
           display: inline-flex; align-items: center; gap: 0.4rem;
           font-family: 'DM Mono', monospace;
           font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-          color: rgba(255,255,255,0.28); text-decoration: none;
+          color: rgba(0,0,0,0.32); text-decoration: none;
           margin-bottom: 2.5rem; transition: color 0.2s ease;
           display: block;
         }
-        .rg-back:hover { color: rgba(255,255,255,0.6); }
+        .rg-back:hover { color: rgba(0,0,0,0.7); }
         .rg-back svg { transition: transform 0.2s ease; }
         .rg-back:hover svg { transform: translateX(-3px); }
 
         .rg-eyebrow {
           font-family: 'DM Mono', monospace;
           font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase;
-          color: #C9A96E; margin-bottom: 0.75rem;
+          color: #A9813F; margin-bottom: 0.75rem;
         }
         .rg-event-title {
           font-family: 'Playfair Display', serif;
           font-size: clamp(2rem, 4vw, 3rem);
-          font-weight: 700; color: #fff; line-height: 1.1;
+          font-weight: 700; color: #0C0C0C; line-height: 1.1;
           margin-bottom: 0.35rem;
         }
         .rg-event-theme {
           font-family: 'Playfair Display', serif;
           font-style: italic;
           font-size: clamp(1.5rem, 3vw, 2rem);
-          color: #C9A96E; line-height: 1.2;
+          color: #A9813F; line-height: 1.2;
           margin-bottom: 1.5rem;
         }
 
@@ -161,55 +161,56 @@ export default function RegisterPage() {
         }
         .rg-detail {
           display: flex; align-items: center; gap: 0.75rem;
-          font-size: 0.88rem; color: rgba(255,255,255,0.5); font-weight: 300;
+          font-size: 0.88rem; color: rgba(0,0,0,0.55); font-weight: 300;
         }
         .rg-detail-icon {
           width: 1.75rem; height: 1.75rem; border-radius: 0.4rem;
-          background: rgba(201,169,110,0.08);
-          border: 1px solid rgba(201,169,110,0.15);
+          background: rgba(201,169,110,0.1);
+          border: 1px solid rgba(201,169,110,0.25);
           display: flex; align-items: center; justify-content: center;
-          color: #C9A96E; flex-shrink: 0;
+          color: #A9813F; flex-shrink: 0;
         }
 
         .rg-scripture {
-          border-left: 2px solid rgba(201,169,110,0.25);
+          border-left: 2px solid rgba(201,169,110,0.35);
           padding-left: 1.25rem; margin-top: 2rem;
         }
         .rg-verse {
           font-family: 'Playfair Display', serif;
           font-style: italic; font-size: 1rem;
-          color: rgba(255,255,255,0.45); line-height: 1.7;
+          color: rgba(0,0,0,0.5); line-height: 1.7;
         }
         .rg-verse-ref {
           font-family: 'DM Mono', monospace;
           font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
-          color: rgba(201,169,110,0.6); margin-top: 0.5rem; display: block;
+          color: rgba(169,129,63,0.75); margin-top: 0.5rem; display: block;
         }
 
         .rg-free-badge {
           display: inline-flex; align-items: center; gap: 0.4rem;
-          background: rgba(201,169,110,0.1);
-          border: 1px solid rgba(201,169,110,0.2);
+          background: rgba(201,169,110,0.12);
+          border: 1px solid rgba(201,169,110,0.3);
           border-radius: 2rem; padding: 0.4rem 1rem;
           font-family: 'DM Mono', monospace;
           font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
-          color: #C9A96E; margin-top: 2rem;
+          color: #A9813F; margin-top: 2rem;
         }
 
         /* ── Form card ── */
         .rg-form-card {
-          background: #111;
-          border: 1px solid rgba(255,255,255,0.08);
+          background: #FAF9F6;
+          border: 1px solid rgba(0,0,0,0.08);
           border-radius: 1.25rem; padding: 2.5rem;
           position: sticky; top: 100px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
         .rg-form-title {
           font-family: 'Playfair Display', serif;
-          font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;
+          font-size: 1.4rem; font-weight: 700; color: #0C0C0C; margin-bottom: 0.35rem;
         }
         .rg-form-sub {
-          font-size: 0.82rem; color: rgba(255,255,255,0.35);
+          font-size: 0.82rem; color: rgba(0,0,0,0.45);
           font-weight: 300; margin-bottom: 2rem; line-height: 1.6;
         }
 
@@ -221,40 +222,40 @@ export default function RegisterPage() {
         .rg-label {
           font-family: 'DM Mono', monospace;
           font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
-          color: rgba(255,255,255,0.35);
+          color: rgba(0,0,0,0.45);
         }
-        .rg-label span { color: #C9A96E; }
+        .rg-label span { color: #A9813F; }
 
         .rg-input, .rg-select, .rg-textarea {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(0,0,0,0.02);
+          border: 1px solid rgba(0,0,0,0.12);
           border-radius: 0.45rem; padding: 0.75rem 1rem;
           font-family: 'DM Sans', sans-serif;
-          font-size: 0.9rem; color: #fff; outline: none; width: 100%;
+          font-size: 0.9rem; color: #0C0C0C; outline: none; width: 100%;
           transition: border-color 0.2s ease, background 0.2s ease;
         }
-        .rg-input::placeholder, .rg-textarea::placeholder { color: rgba(255,255,255,0.2); }
+        .rg-input::placeholder, .rg-textarea::placeholder { color: rgba(0,0,0,0.28); }
         .rg-input:focus, .rg-select:focus, .rg-textarea:focus {
-          border-color: rgba(201,169,110,0.45);
-          background: rgba(255,255,255,0.06);
+          border-color: rgba(169,129,63,0.55);
+          background: rgba(0,0,0,0.01);
         }
-        .rg-select option { background: #1a1a1a; color: #fff; }
+        .rg-select option { background: #FFFFFF; color: #0C0C0C; }
         .rg-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 
         .rg-divider {
-          height: 1px; background: rgba(255,255,255,0.06); margin: 0.5rem 0;
+          height: 1px; background: rgba(0,0,0,0.08); margin: 0.5rem 0;
         }
         .rg-section-label {
           font-family: 'DM Mono', monospace;
           font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
-          color: rgba(255,255,255,0.25);
+          color: rgba(0,0,0,0.32);
         }
 
         .rg-error {
-          background: rgba(220,60,60,0.08);
-          border: 1px solid rgba(220,60,60,0.2);
+          background: rgba(200,40,40,0.06);
+          border: 1px solid rgba(200,40,40,0.2);
           border-radius: 0.45rem; padding: 0.75rem 1rem;
-          font-size: 0.8rem; color: rgba(255,130,130,0.85);
+          font-size: 0.8rem; color: rgba(170,30,30,0.9);
           display: flex; align-items: center; gap: 0.5rem;
         }
 
@@ -269,7 +270,7 @@ export default function RegisterPage() {
           transition: background 0.25s ease, transform 0.2s ease;
           margin-top: 0.5rem;
         }
-        .rg-submit:hover:not(:disabled) { background: #dfc08a; transform: translateY(-1px); }
+        .rg-submit:hover:not(:disabled) { background: #b8925a; }
         .rg-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .rg-spinner {
@@ -280,7 +281,7 @@ export default function RegisterPage() {
         @keyframes rg-spin { to { transform: rotate(360deg); } }
 
         .rg-note {
-          font-size: 0.72rem; color: rgba(255,255,255,0.22);
+          font-size: 0.72rem; color: rgba(0,0,0,0.3);
           text-align: center; margin-top: 0.5rem; line-height: 1.6;
         }
 
@@ -291,17 +292,17 @@ export default function RegisterPage() {
         }
         .rg-success-ring {
           width: 4rem; height: 4rem; border-radius: 50%;
-          background: rgba(201,169,110,0.1);
-          border: 1px solid rgba(201,169,110,0.25);
+          background: rgba(201,169,110,0.14);
+          border: 1px solid rgba(201,169,110,0.35);
           display: flex; align-items: center; justify-content: center;
-          color: #C9A96E;
+          color: #A9813F;
         }
         .rg-success-title {
           font-family: 'Playfair Display', serif;
-          font-size: 1.5rem; font-weight: 700; color: #fff;
+          font-size: 1.5rem; font-weight: 700; color: #0C0C0C;
         }
         .rg-success-body {
-          font-size: 0.88rem; color: rgba(255,255,255,0.45);
+          font-size: 0.88rem; color: rgba(0,0,0,0.5);
           font-weight: 300; line-height: 1.75; max-width: 32ch;
         }
         .rg-success-wa {
@@ -312,14 +313,14 @@ export default function RegisterPage() {
           padding: 0.8rem 1.5rem; border-radius: 0.35rem;
           text-decoration: none; transition: background 0.2s ease;
         }
-        .rg-success-wa:hover { background: #dfc08a; }
+        .rg-success-wa:hover { background: #b8925a; }
         .rg-success-back {
           font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
-          color: rgba(255,255,255,0.28); background: none; border: none;
+          color: rgba(0,0,0,0.32); background: none; border: none;
           cursor: pointer; font-family: 'DM Mono', monospace;
           transition: color 0.2s ease; text-decoration: none;
         }
-        .rg-success-back:hover { color: rgba(255,255,255,0.6); }
+        .rg-success-back:hover { color: rgba(0,0,0,0.7); }
       `}</style>
 
       <div className="rg-root">
@@ -431,7 +432,7 @@ export default function RegisterPage() {
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              Admission is completely free
+              Registration is completely free
             </span>
           </div>
 
