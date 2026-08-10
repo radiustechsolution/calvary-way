@@ -405,7 +405,7 @@ export default function RegisterPage() {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
-                3 days
+                4 days
               </div>
             </div>
             <div className="rg-scripture">
